@@ -7,9 +7,10 @@ type TagInputProps = {
   placeholder?: string;
   values: string[];
   setValues: (v: string[]) => void;
+  presetSuggestions?: string[];
 };
 
-export const TagInput: React.FC<TagInputProps> = ({ label, placeholder, values, setValues }) => {
+export const TagInput: React.FC<TagInputProps> = ({ label, placeholder, values, setValues, presetSuggestions }) => {
   const [input, setInput] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -59,7 +60,10 @@ export const TagInput: React.FC<TagInputProps> = ({ label, placeholder, values, 
   }, [input]);
 
   const addTag = (tag: string) => {
-    if (!values.includes(tag)) setValues([...values, tag]);
+    const cleanTag = tag.trim().toLowerCase();
+    if (cleanTag && !values.includes(cleanTag)) {
+      setValues([...values, cleanTag]);
+    }
     setInput('');
     setSuggestions([]);
     setShowSuggestions(false);
@@ -78,7 +82,7 @@ export const TagInput: React.FC<TagInputProps> = ({ label, placeholder, values, 
 
   return (
     <div style={{ marginBottom: 24 }}>
-      <p style={{ fontWeight: 600, marginBottom: 8 }}>{label}</p>
+      <p style={{ fontWeight: 600, marginBottom: 8, fontSize: 'var(--text-sm)', color: 'var(--ink-2)' }}>{label}</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
         {values.map((tag) => (
           <span
@@ -86,12 +90,14 @@ export const TagInput: React.FC<TagInputProps> = ({ label, placeholder, values, 
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 4,
-              background: 'rgba(99,102,241,0.1)',
-              color: '#6366f1',
-              padding: '4px 8px',
-              borderRadius: 12,
+              gap: 6,
+              background: 'var(--accent-soft)',
+              border: '1px solid var(--accent-soft-2)',
+              color: 'var(--accent)',
+              padding: '4px 10px',
+              borderRadius: 16,
               fontSize: 13,
+              fontWeight: 500,
             }}
           >
             {tag}
@@ -103,7 +109,9 @@ export const TagInput: React.FC<TagInputProps> = ({ label, placeholder, values, 
                 border: 'none',
                 cursor: 'pointer',
                 fontWeight: 600,
-                color: '#6366f1',
+                color: 'var(--accent)',
+                padding: '0 2px',
+                fontSize: 14,
               }}
             >
               ×
@@ -121,13 +129,44 @@ export const TagInput: React.FC<TagInputProps> = ({ label, placeholder, values, 
         onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
         style={{
           width: '100%',
-          padding: '8px 12px',
+          padding: '10px 14px',
           borderRadius: 8,
           border: '1px solid var(--hairline)',
           background: 'var(--surface)',
           color: 'var(--ink)',
+          fontSize: '14px',
+          outline: 'none',
+          boxSizing: 'border-box',
+          transition: 'border-color 0.2s ease',
         }}
       />
+      {presetSuggestions && presetSuggestions.length > 0 && (
+        <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+          <span style={{ fontSize: '11px', color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>eg:</span>
+          {presetSuggestions.map((sug) => {
+            const isSelected = values.includes(sug);
+            return (
+              <button
+                type="button"
+                key={sug}
+                onClick={() => isSelected ? removeTag(sug) : addTag(sug)}
+                style={{
+                  background: isSelected ? 'var(--accent)' : 'var(--surface-sunken)',
+                  color: isSelected ? '#fff' : 'var(--ink-2)',
+                  border: isSelected ? '1px solid var(--accent)' : '1px solid var(--hairline)',
+                  padding: '3px 8px',
+                  borderRadius: 12,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {sug}
+              </button>
+            );
+          })}
+        </div>
+      )}
       {showSuggestions && suggestions.length > 0 && (
         <div style={{ position: 'relative', marginTop: 4 }}>
           <ul
@@ -145,6 +184,7 @@ export const TagInput: React.FC<TagInputProps> = ({ label, placeholder, values, 
               listStyle: 'none',
               margin: 0,
               padding: '4px 0',
+              boxShadow: 'var(--shadow-pop)',
             }}
           >
             {suggestions.map((s) => (
@@ -152,9 +192,13 @@ export const TagInput: React.FC<TagInputProps> = ({ label, placeholder, values, 
                 key={s}
                 onMouseDown={() => addTag(s)}
                 style={{
-                  padding: '6px 12px',
+                  padding: '8px 14px',
                   cursor: 'pointer',
+                  color: 'var(--ink)',
+                  fontSize: 13,
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-sunken)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
               >
                 {s}
               </li>

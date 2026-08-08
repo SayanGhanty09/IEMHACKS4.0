@@ -1,4 +1,4 @@
-﻿// Phase 4: Web Speech API voice input for vital logging
+// Phase 4: Web Speech API voice input for vital logging
 import { useState, useRef } from "react";
 
 interface ParsedVitals { hr?: number; spo2?: number; bpSys?: number; bpDia?: number; }
@@ -39,7 +39,18 @@ export default function VoiceInput({ onVitals, lang = "en-IN" }: Props) {
       setParsed(vitals);
       onVitals(vitals);
     };
-    rec.onerror = (e: any) => setError(e.error);
+    rec.onerror = (e: any) => {
+      console.error("Voice input error:", e);
+      if (e.error === "not-allowed") {
+        setError("Microphone access blocked. Please allow mic permission in your browser URL bar.");
+      } else if (e.error === "no-speech") {
+        setError("No speech detected. Please speak clearly into your microphone.");
+      } else if (e.error === "network") {
+        setError("Network error: Chrome Speech Recognition requires an internet connection.");
+      } else {
+        setError(`Speech error: ${e.error}. Please try again.`);
+      }
+    };
     rec.onend = () => setListening(false);
     rec.start();
     recRef.current = rec;
