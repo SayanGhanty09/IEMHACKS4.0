@@ -1,5 +1,6 @@
-## 💻 Software — AI Health Prediction System
 
+AI Health Prediction System
+## 💻 Software 
 The software component of the project uses a **machine-learning based health risk prediction system** to estimate the risk of four major health conditions:
 
 * 🧪 **High Cholesterol**
