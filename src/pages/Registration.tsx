@@ -22,6 +22,9 @@ export default function Registration() {
   const [lifestyle, setLifestyle] = useState<string[]>([]);
   const [familyHistory, setFamilyHistory] = useState<string[]>([]);
 
+  // Cholesterol lab values (passed to ML model on submit)
+  const [cholFields, setCholFields] = useState({ totalChol: '', ldl: '', hdl: '', triglycerides: '', bmi: '', hba1c: '' });
+
   // History of submitted records (loaded from localStorage)
   const [history, setHistory] = useState<Array<any>>([]);
 
@@ -46,6 +49,15 @@ export default function Registration() {
       symptoms, 
       lifestyle, 
       familyHistory,
+      // Cholesterol lab values — forwarded to ML model on Results page
+      cholesterol: {
+        totalChol:     cholFields.totalChol     ? parseFloat(cholFields.totalChol)     : null,
+        ldl:           cholFields.ldl           ? parseFloat(cholFields.ldl)           : null,
+        hdl:           cholFields.hdl           ? parseFloat(cholFields.hdl)           : null,
+        triglycerides: cholFields.triglycerides ? parseFloat(cholFields.triglycerides) : null,
+        bmi:           cholFields.bmi           ? parseFloat(cholFields.bmi)           : null,
+        hba1c:         cholFields.hba1c         ? parseFloat(cholFields.hba1c)         : null,
+      },
       timestamp: new Date().toLocaleDateString()
     };
     
@@ -65,6 +77,7 @@ export default function Registration() {
     setSymptoms([]);
     setLifestyle([]);
     setFamilyHistory([]);
+    setCholFields({ totalChol: '', ldl: '', hdl: '', triglycerides: '', bmi: '', hba1c: '' });
     
     // Navigate to results page
     navigate("/results");
@@ -337,6 +350,86 @@ export default function Registration() {
             setValues={setFamilyHistory} 
             presetSuggestions={familySuggestions}
           />
+
+          {/* ── Cholesterol Lab Values ── */}
+          <div style={{ marginTop: 8 }}>
+            <h3 style={{
+              fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 6,
+              display: 'flex', alignItems: 'center', gap: 8
+            }}>
+              <span style={{
+                background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                borderRadius: 6, padding: '2px 8px', fontSize: 11,
+                color: '#fff', fontWeight: 700, letterSpacing: '0.05em'
+              }}>LAB</span>
+              Cholesterol Lab Values
+              <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--ink-3)', marginLeft: 4 }}>(optional — used for risk prediction)</span>
+            </h3>
+            
+            <div style={{ 
+              fontSize: '12px', 
+              color: 'var(--ink-3)', 
+              background: 'rgba(99, 102, 241, 0.05)', 
+              borderLeft: '3px solid var(--accent)', 
+              padding: '8px 12px', 
+              borderRadius: '0 6px 6px 0',
+              marginBottom: '14px',
+              fontWeight: 500
+            }}>
+              <strong>Note:</strong> Entered readings must be obtained from an authorized laboratory.
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+              gap: 12,
+            }}>
+              {([
+                { key: 'totalChol',     label: 'Total Cholesterol', unit: 'mg/dL' },
+                { key: 'ldl',           label: 'LDL',               unit: 'mg/dL' },
+                { key: 'hdl',           label: 'HDL',               unit: 'mg/dL' },
+                { key: 'triglycerides', label: 'Triglycerides',     unit: 'mg/dL' },
+                { key: 'bmi',           label: 'BMI',               unit: 'kg/m²' },
+                { key: 'hba1c',         label: 'HbA1c',             unit: '%'     },
+              ] as const).map(({ key, label, unit }) => (
+                <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <label style={{
+                    fontSize: 11, fontWeight: 600, color: 'var(--ink-3)',
+                    textTransform: 'uppercase', letterSpacing: '0.06em'
+                  }}>{label}</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      placeholder="—"
+                      value={cholFields[key]}
+                      onChange={e => setCholFields(prev => ({ ...prev, [key]: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '9px 40px 9px 10px',
+                        borderRadius: 8,
+                        border: '1.5px solid var(--hairline)',
+                        background: 'var(--surface)',
+                        color: 'var(--ink)',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                        transition: 'border-color 0.2s',
+                      }}
+                      onFocus={e => (e.target.style.borderColor = '#6366f1')}
+                      onBlur={e  => (e.target.style.borderColor = 'var(--hairline)')}
+                    />
+                    <span style={{
+                      position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                      fontSize: 10, color: 'var(--ink-3)', fontWeight: 500, pointerEvents: 'none'
+                    }}>{unit}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
           <button 
             type="submit" 

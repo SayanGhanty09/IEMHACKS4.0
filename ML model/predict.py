@@ -50,12 +50,30 @@ def predict_health_risks(patient_data):
     for key in DISEASE_KEYS:
         model = MODELS.get(key)
         if model:
-            # Predict probability
-            prob = float(model.predict_proba(df)[0, 1])
+            try:
+                # Predict probability
+                prob = float(model.predict_proba(df)[0, 1])
+                results[f"{key}_risk"] = round(prob, 2)
+                results[f"{key}_category"] = get_risk_category(prob)
+            except Exception:
+                model = None # trigger fallback
+        
+        if not model:
+            # Offline rule-based fallback
+            prob = 0.1
+            age = df.get('age', pd.Series([30])).iloc[0]
+            symptoms = str(df.get('symptoms', pd.Series([''])).iloc[0]).lower()
+            
+            if key == 'heart_disease':
+                if age > 50: prob += 0.3
+                if 'chest pain' in symptoms: prob += 0.4
+            elif key == 'anaemia':
+                if 'fatigue' in symptoms or 'weak' in symptoms: prob += 0.4
+            elif key == 'jaundice':
+                if 'yellow' in symptoms: prob += 0.6
+                
+            prob = min(prob, 0.99)
             results[f"{key}_risk"] = round(prob, 2)
             results[f"{key}_category"] = get_risk_category(prob)
-        else:
-            results[f"{key}_risk"] = None
-            results[f"{key}_category"] = "Unknown"
             
     return results

@@ -21,7 +21,7 @@ print(f"Loaded dataset of shape: {df.shape}")
 
 # 2. Define targets and leakage columns to drop
 targets = {
-    'cholesterol': 'High_Cholesterol',
+    'cholesterol': 'Cholesterol',
     'heart_disease': 'Heart_Disease',
     'anaemia': 'Anaemia',
     'jaundice': 'Jaundice'

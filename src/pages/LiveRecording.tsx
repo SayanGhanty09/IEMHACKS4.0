@@ -78,6 +78,61 @@ const LiveRecording: React.FC = () => {
   const [expandedRiskId, setExpandedRiskId] = useState<string | null>(null);
   const [manualBiomarkers, setManualBiomarkers] = useState<any>(null);
 
+  // Cholesterol risk calculator state
+  const [cholFields, setCholFields] = useState({
+    totalChol: '', ldl: '', hdl: '', triglycerides: '', bmi: '', hba1c: ''
+  });
+  const [cholResult, setCholResult] = useState<{ risk: number; category: string } | null>(null);
+
+  const computeCholesterolRisk = () => {
+    const tc   = parseFloat(cholFields.totalChol);
+    const ldl  = parseFloat(cholFields.ldl);
+    const hdl  = parseFloat(cholFields.hdl);
+    const trig = parseFloat(cholFields.triglycerides);
+    const bmi  = parseFloat(cholFields.bmi);
+    const hba1c= parseFloat(cholFields.hba1c);
+    if ([tc, ldl, hdl, trig, bmi, hba1c].some(isNaN)) return;
+
+    // Reference table data
+    const REF = [
+      [158,82,62,92,21.8,5.1,0.05],[172,95,58,108,22.7,5.2,0.08],
+      [181,105,54,120,23.5,5.3,0.12],[190,112,51,135,24.2,5.4,0.18],
+      [198,120,48,145,25.1,5.5,0.25],[207,128,45,158,26.0,5.6,0.32],
+      [215,135,44,170,26.8,5.7,0.39],[222,142,42,182,27.4,5.8,0.46],
+      [230,150,40,195,28.1,5.9,0.54],[235,155,39,205,28.7,6.0,0.61],
+      [242,160,38,215,29.2,6.1,0.68],[248,168,37,225,29.8,6.2,0.74],
+      [255,175,36,235,30.4,6.3,0.79],[262,182,35,245,30.9,6.4,0.83],
+      [270,190,34,255,31.5,6.5,0.87],[278,198,33,275,32.1,6.6,0.90],
+      [285,205,32,290,32.8,6.7,0.93],[295,218,30,310,33.5,6.9,0.96],
+      [305,230,28,335,34.2,7.1,0.98],[320,245,26,365,35.0,7.4,0.99],
+    ];
+    const RANGES = { tc:[158,320], ldl:[82,245], hdl:[26,62], trig:[92,365], bmi:[21.8,35.0], hba1c:[5.1,7.4] };
+    const W = { tc:0.20, ldl:0.25, hdl:0.20, trig:0.15, bmi:0.10, hba1c:0.10 };
+    const norm = (v: number, [lo, hi]: number[], inv = false) => {
+      const n = Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
+      return inv ? 1 - n : n;
+    };
+    const composite = (tc2: number, l: number, h: number, tr: number, b: number, a: number) =>
+      W.tc * norm(tc2, RANGES.tc) + W.ldl * norm(l, RANGES.ldl) + W.hdl * norm(h, RANGES.hdl, true)
+      + W.trig * norm(tr, RANGES.trig) + W.bmi * norm(b, RANGES.bmi) + W.hba1c * norm(a, RANGES.hba1c);
+    const input_c = composite(tc, ldl, hdl, trig, bmi, hba1c);
+    const sorted = REF.map(r => ({ c: composite(r[0],r[1],r[2],r[3],r[4],r[5]), risk: r[6] }))
+      .sort((a, b) => a.c - b.c);
+    let risk = sorted[sorted.length - 1].risk;
+    if (input_c <= sorted[0].c) risk = sorted[0].risk;
+    else {
+      for (let i = 0; i < sorted.length - 1; i++) {
+        if (sorted[i].c <= input_c && input_c <= sorted[i+1].c) {
+          const t = (input_c - sorted[i].c) / (sorted[i+1].c - sorted[i].c);
+          risk = parseFloat((sorted[i].risk + t * (sorted[i+1].risk - sorted[i].risk)).toFixed(2));
+          break;
+        }
+      }
+    }
+    const cat = risk < 0.30 ? 'Low' : risk < 0.60 ? 'Moderate' : risk < 0.84 ? 'High' : 'Very High';
+    setCholResult({ risk, category: cat });
+  };
+
   const isConnected =
     status === BLEStatus.CONNECTED ||
     status === BLEStatus.IDLE ||
@@ -839,6 +894,151 @@ const LiveRecording: React.FC = () => {
                 </div>
               </div>
             </div>
+          </Card>
+        </section>
+      )}
+
+      {/* ============ CHOLESTEROL RISK CALCULATOR ============ */}
+      {activePatientId && (
+        <section style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
+          <SectionHeader
+            eyebrow="Lab Values"
+            title="Cholesterol Risk Calculator"
+            description="Enter lab-measured values to estimate the patient's cholesterol risk level."
+          />
+          <Card pad="var(--sp-6)">
+            {/* Input grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: 'var(--sp-4)',
+              marginBottom: 'var(--sp-5)'
+            }}>
+              {([
+                { key: 'totalChol',    label: 'Total Cholesterol', unit: 'mg/dL' },
+                { key: 'ldl',          label: 'LDL',               unit: 'mg/dL' },
+                { key: 'hdl',          label: 'HDL',               unit: 'mg/dL' },
+                { key: 'triglycerides',label: 'Triglycerides',     unit: 'mg/dL' },
+                { key: 'bmi',          label: 'BMI',               unit: 'kg/m²' },
+                { key: 'hba1c',        label: 'HbA1c',             unit: '%'     },
+              ] as const).map(({ key, label, unit }) => (
+                <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-1)' }}>
+                  <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    {label}
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      placeholder="—"
+                      value={cholFields[key]}
+                      onChange={e => setCholFields(prev => ({ ...prev, [key]: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '10px 44px 10px 12px',
+                        borderRadius: 8,
+                        border: '1.5px solid var(--hairline)',
+                        background: 'var(--surface)',
+                        color: 'var(--ink)',
+                        fontSize: 'var(--text-sm)',
+                        fontWeight: 600,
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                        transition: 'border-color 0.2s',
+                      }}
+                      onFocus={e => (e.target.style.borderColor = 'var(--accent)')}
+                      onBlur={e => (e.target.style.borderColor = 'var(--hairline)')}
+                    />
+                    <span style={{
+                      position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                      fontSize: 11, color: 'var(--ink-3)', fontWeight: 500, pointerEvents: 'none'
+                    }}>{unit}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={computeCholesterolRisk}
+              style={{
+                padding: '11px 28px',
+                borderRadius: 8,
+                background: 'linear-gradient(135deg, var(--accent), #8b5cf6)',
+                color: '#fff',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: 'var(--text-sm)',
+                boxShadow: 'var(--shadow-1)',
+                transition: 'opacity 0.2s',
+                marginBottom: cholResult ? 'var(--sp-5)' : 0,
+              }}
+              onMouseEnter={e => ((e.target as HTMLButtonElement).style.opacity = '0.88')}
+              onMouseLeave={e => ((e.target as HTMLButtonElement).style.opacity = '1')}
+            >
+              Calculate Cholesterol Risk
+            </button>
+
+            {/* Result panel */}
+            {cholResult && (() => {
+              const pct = Math.round(cholResult.risk * 100);
+              const colorMap: Record<string, string> = {
+                Low: '#16a34a', Moderate: '#ca8a04', High: '#dc2626', 'Very High': '#7e22ce'
+              };
+              const bgMap: Record<string, string> = {
+                Low: 'rgba(22,163,74,0.08)', Moderate: 'rgba(202,138,4,0.08)',
+                High: 'rgba(220,38,38,0.08)', 'Very High': 'rgba(126,34,206,0.08)'
+              };
+              const barColorMap: Record<string, string> = {
+                Low: '#16a34a', Moderate: '#eab308', High: '#ef4444', 'Very High': '#a855f7'
+              };
+              const color = colorMap[cholResult.category] || '#6366f1';
+              const bg    = bgMap[cholResult.category]    || 'rgba(99,102,241,0.08)';
+              const barClr= barColorMap[cholResult.category] || '#6366f1';
+              return (
+                <div style={{
+                  padding: '20px 24px',
+                  borderRadius: 12,
+                  background: bg,
+                  border: `1.5px solid ${color}33`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--sp-3)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--ink)' }}>Cholesterol Risk Score</span>
+                    <span style={{
+                      padding: '4px 14px',
+                      borderRadius: 20,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color,
+                      background: `${color}18`,
+                      border: `1px solid ${color}44`,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em'
+                    }}>{cholResult.category}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+                    <div style={{ flex: 1, height: 10, borderRadius: 5, background: 'var(--hairline)', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${pct}%`,
+                        background: `linear-gradient(90deg, ${barClr}aa, ${barClr})`,
+                        borderRadius: 5,
+                        transition: 'width 0.6s ease'
+                      }} />
+                    </div>
+                    <span style={{ fontSize: 22, fontWeight: 800, color, minWidth: 52, textAlign: 'right' }}>{pct}%</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--ink-3)' }}>
+                    Risk probability: <strong>{cholResult.risk.toFixed(2)}</strong> &nbsp;|&nbsp;
+                    Estimated from Total Cholesterol, LDL, HDL, Triglycerides, BMI, and HbA1c.
+                  </p>
+                </div>
+              );
+            })()}
           </Card>
         </section>
       )}

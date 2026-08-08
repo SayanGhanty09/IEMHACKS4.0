@@ -80,14 +80,19 @@ function isOpenNow(): boolean {
 }
 
 function loadAppointments(): Appointment[] {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]"); }
-  catch { return []; }
+  try {
+    const raw: Appointment[] = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
+    // Ensure all video appointments have the hardcoded Google Meet link
+    return raw.map(appt =>
+      appt.mode === "video" ? { ...appt, meetLink: generateMeetLink() } : appt
+    );
+  } catch {
+    return [];
+  }
 }
 
 function generateMeetLink(): string {
-  // Generate a Google Meet-style room code: xxx-yyyy-zzz
-  const seg = () => Math.random().toString(36).substring(2, 5);
-  return `https://meet.google.com/${seg()}-${seg()}${seg()}-${seg()}`;
+  return "https://meet.google.com/ngc-zuxa-eyb";
 }
 
 function printAppointment(appt: Appointment) {
