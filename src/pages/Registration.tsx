@@ -90,6 +90,81 @@ export default function Registration() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const downloadPatientHistory = () => {
+    if (history.length === 0) return;
+    const win = window.open("", "_blank", "width=800,height=1000");
+    if (!win) return;
+    const rows = history.map(rec => `
+      <tr>
+        <td class="row"><span class="avatar">${rec.name ? rec.name.charAt(0).toUpperCase() : '?'}</span> <strong>${rec.name || '—'}</strong></td>
+        <td class="row">${rec.age || '—'}</td>
+        <td class="row">${rec.gender || '—'}</td>
+        <td class="row">${rec.location || '—'}</td>
+        <td class="row">${rec.symptoms?.join(", ") || 'None'}</td>
+        <td class="row">${rec.lifestyle?.join(", ") || 'None'}</td>
+        <td class="row">${rec.familyHistory?.join(", ") || 'None'}</td>
+        <td class="row">${rec.timestamp || '—'}</td>
+      </tr>
+    `).join("");
+    win.document.write(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <title>Patient History Report - Anebilin</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+          * { margin:0; padding:0; box-sizing:border-box; }
+          body { font-family:'Inter',sans-serif; background:#f8fafc; color:#1e293b; padding:32px; }
+          .header { text-align:center; margin-bottom:36px; padding-bottom:24px; border-bottom:2px solid #e2e8f0; }
+          .logo { font-size:26px; font-weight:700; color:#6366f1; letter-spacing:-0.03em; margin-bottom:4px; }
+          .subtitle { font-size:13px; color:#64748b; }
+          h1 { font-size:20px; font-weight:700; color:#1e293b; margin-bottom:6px; }
+          .meta { font-size:12px; color:#94a3b8; margin-bottom:24px; }
+          table { width:100%; border-collapse:collapse; font-size:12px; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 1px 8px rgba(0,0,0,0.06); }
+          th { background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; padding:12px 14px; text-align:left; font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; }
+          td.row { padding:11px 14px; border-bottom:1px solid #f1f5f9; vertical-align:top; color:#334155; }
+          tr:last-child td.row { border-bottom:none; }
+          tr:nth-child(even) { background:#f8fafc; }
+          .avatar { display:inline-flex; width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; align-items:center; justify-content:center; font-size:10px; font-weight:700; margin-right:6px; vertical-align:middle; }
+          .footer { margin-top:32px; text-align:center; font-size:11px; color:#94a3b8; }
+          @media print { body { background:#fff; padding:16px; } table { box-shadow:none; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="logo">🏥 Anebilin Health</div>
+          <div class="subtitle">AI-Powered Rural Patient Management System</div>
+        </div>
+        <h1>Patient History Report</h1>
+        <div class="meta">Total Records: ${history.length} &nbsp;·&nbsp; Generated: ${new Date().toLocaleDateString('en-IN', {day:'2-digit',month:'long',year:'numeric'})}</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Patient Name</th>
+              <th>Age</th>
+              <th>Gender</th>
+              <th>Location</th>
+              <th>Symptoms</th>
+              <th>Lifestyle</th>
+              <th>Family History</th>
+              <th>Recorded On</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="footer">
+          <p>Confidential medical record — for authorised healthcare personnel only.</p>
+          <p style="margin-top:4px;">© ${new Date().getFullYear()} Anebilin Health Platform</p>
+        </div>
+      </body>
+      </html>
+    `);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 600);
+  };
+
   // Keywords suggestions matching backend feature mapping keys
   const symptomsSuggestions = [
     "chest_pain", "fatigue", "dizziness", "shortness_of_breath", 
@@ -304,10 +379,24 @@ export default function Registration() {
           justifyContent: "space-between", 
           alignItems: "center" 
         }}>
-          <span>{t('history') ?? 'Patient Records Database'}</span>
-          <span style={{ fontSize: "12px", padding: "4px 10px", background: "var(--surface-sunken)", borderRadius: 12, color: "var(--ink-3)", fontWeight: 500 }}>
-            {history.length} {history.length === 1 ? 'record' : 'records'} saved
-          </span>
+          <span>Patient Records Database</span>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {history.length > 0 && (
+              <button
+                onClick={downloadPatientHistory}
+                style={{
+                  padding: "6px 12px", borderRadius: 8, border: "1px solid #c7d2fe",
+                  background: "#eef2ff", color: "#6366f1", cursor: "pointer",
+                  fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 5
+                }}
+              >
+                🖨️ Download History
+              </button>
+            )}
+            <span style={{ fontSize: "12px", padding: "4px 10px", background: "var(--surface-sunken)", borderRadius: 12, color: "var(--ink-3)", fontWeight: 500 }}>
+              {history.length} {history.length === 1 ? 'record' : 'records'} saved
+            </span>
+          </div>
         </h2>
         
         {history.length === 0 ? (

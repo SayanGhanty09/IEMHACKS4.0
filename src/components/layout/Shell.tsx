@@ -208,7 +208,10 @@ const LiveClock: React.FC = () => {
       if (intervalRef.current !== null) window.clearInterval(intervalRef.current);
     };
   }, []);
-  const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const hours = now.getHours();
+  const mins = now.getMinutes().toString().padStart(2, '0');
+  const displayHours = (hours % 12 || 12).toString().padStart(2, '0');
+  const time = `${displayHours}:${mins} am`;
   return (
     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, color: 'var(--ink-3)', fontSize: 'var(--text-sm)' }}>
       <span
@@ -243,12 +246,10 @@ const ShellContent: React.FC = () => {
     return stored && ACCENT_THEMES.some((t) => t.id === stored) ? stored : ACCENT_THEMES[0].id;
   });
 
-  const isConnected =
-    status === BLEStatus.CONNECTED ||
-    status === BLEStatus.IDLE ||
-    status === BLEStatus.SCANNING ||
-    status === BLEStatus.SCANNING_BP;
-  const isConnecting = status === BLEStatus.CONNECTING;
+  const [isOnline, setIsOnline] = useState(true);
+
+  const isConnected = true; // Always show connected
+  const isConnecting = false;
 
   // Drive --accent CSS variables from the picker, persist to storage.
   useEffect(() => {
@@ -548,6 +549,32 @@ const ShellContent: React.FC = () => {
               </select>
               <span style={{ width: 1, height: 22, background: 'var(--hairline)' }} />
               <AccentSwatches themes={ACCENT_THEMES} activeId={accentThemeId} onPick={setAccentThemeId} />
+              <span style={{ width: 1, height: 22, background: 'var(--hairline)' }} />
+              {/* Dummy Online/Offline Status Button */}
+              <button
+                onClick={() => setIsOnline(!isOnline)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  borderRadius: 'var(--r-pill)',
+                  background: isOnline ? 'var(--success-soft)' : '#fff1f2',
+                  color: isOnline ? 'var(--success)' : '#dc2626',
+                  border: `1px solid ${isOnline ? 'color-mix(in oklab, var(--success) 22%, transparent)' : '#fca5a5'}`,
+                  cursor: 'pointer',
+                  fontSize: 'var(--text-sm)',
+                  fontWeight: 600,
+                  transition: 'all var(--t-2) var(--ease)',
+                }}
+              >
+                <span style={{
+                  width: 7, height: 7, borderRadius: '50%',
+                  background: isOnline ? 'var(--success)' : '#dc2626',
+                  display: 'inline-block'
+                }} />
+                <span>{isOnline ? 'Online' : 'Offline'}</span>
+              </button>
               <span style={{ width: 1, height: 22, background: 'var(--hairline)' }} />
               <BleChip
                 connected={isConnected}
