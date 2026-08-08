@@ -96,85 +96,92 @@ const AIAssistantChat: React.FC<AIAssistantChatProps> = ({ biomarkerData, patien
     clearSubtitleAfterDelay(1500);
   }, [clearSubtitleAfterDelay]);
 
-  const startVoice = useCallback(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) {
-      setVoiceError("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
-      return;
-    }
+    const startVoice = useCallback(() => {
+      const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (!SR) {
+        setVoiceError("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
+        return;
+      }
 
-    setVoiceError(null);
-
-    // Stop any existing session first
-    try { recognitionRef.current?.stop(); } catch (_) {}
-    if (subtitleTimerRef.current) clearTimeout(subtitleTimerRef.current);
-
-    const rec: SpeechRecognition = new SR();
-    rec.lang = voiceLang;
-    rec.continuous = false;      // false is more reliable cross-browser
-    rec.interimResults = true;
-    rec.maxAlternatives = 1;
-
-    rec.onstart = () => {
-      setIsListening(true);
-      setLiveSubtitle("");
       setVoiceError(null);
-    };
 
-    rec.onresult = (event: SpeechRecognitionEvent) => {
-      // Accumulate ALL results: interim ones are shown live, final ones go to input
-      let interimText = "";
-      let finalText = "";
+      // Request microphone permission explicitly
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => {
+          // Stop any existing session first
+          try { recognitionRef.current?.stop(); } catch (_) {}
+          if (subtitleTimerRef.current) clearTimeout(subtitleTimerRef.current);
 
-      for (let i = 0; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalText += transcript;
-        } else {
-          interimText += transcript;
-        }
-      }
+          const rec: SpeechRecognition = new SR();
+          rec.lang = voiceLang;
+          rec.continuous = false;      // false is more reliable cross-browser
+          rec.interimResults = true;
+          rec.maxAlternatives = 1;
 
-      // Show whichever is available as live subtitle
-      setLiveSubtitle(interimText || finalText);
+          rec.onstart = () => {
+            setIsListening(true);
+            setLiveSubtitle("");
+            setVoiceError(null);
+          };
 
-      // Commit final text to input
-      if (finalText.trim()) {
-        setChatInput(prev => {
-          const trimmedPrev = prev.trim();
-          return trimmedPrev ? `${trimmedPrev} ${finalText.trim()}` : finalText.trim();
+          rec.onresult = (event: SpeechRecognitionEvent) => {
+            // Accumulate ALL results: interim ones are shown live, final ones go to input
+            let interimText = "";
+            let finalText = "";
+
+            for (let i = 0; i < event.results.length; i++) {
+              const transcript = event.results[i][0].transcript;
+              if (event.results[i].isFinal) {
+                finalText += transcript;
+              } else {
+                interimText += transcript;
+              }
+            }
+
+            // Show whichever is available as live subtitle
+            setLiveSubtitle(interimText || finalText);
+
+            // Commit final text to input
+            if (finalText.trim()) {
+              setChatInput(prev => {
+                const trimmedPrev = prev.trim();
+                return trimmedPrev ? `${trimmedPrev} ${finalText.trim()}` : finalText.trim();
+              });
+            }
+          };
+
+          rec.onerror = (e: SpeechRecognitionErrorEvent) => {
+            setIsListening(false);
+            if (e.error === "no-speech") {
+              setVoiceError("No speech detected. Tap the mic and try again.");
+            } else if (e.error === "not-allowed") {
+              setVoiceError("Microphone permission denied. Please allow mic access in your browser.");
+            } else if (e.error === "network") {
+              setVoiceError("Network error. Check your internet connection.");
+            } else {
+              setVoiceError(`Voice error: ${e.error}. Try again.`);
+            }
+            clearSubtitleAfterDelay(1500);
+          };
+
+          rec.onend = () => {
+            setIsListening(false);
+            // Keep subtitle visible for 2s so user can confirm what was heard
+            clearSubtitleAfterDelay(2000);
+          };
+
+          recognitionRef.current = rec;
+          try {
+            rec.start();
+          } catch (e) {
+            setVoiceError("Could not start microphone. Is another app using it?");
+            setIsListening(false);
+          }
+        })
+        .catch(() => {
+          setVoiceError("Microphone permission was denied. Please allow access in your browser settings.");
         });
-      }
-    };
-
-    rec.onerror = (e: SpeechRecognitionErrorEvent) => {
-      setIsListening(false);
-      if (e.error === "no-speech") {
-        setVoiceError("No speech detected. Tap the mic and try again.");
-      } else if (e.error === "not-allowed") {
-        setVoiceError("Microphone permission denied. Please allow mic access in your browser.");
-      } else if (e.error === "network") {
-        setVoiceError("Network error. Check your internet connection.");
-      } else {
-        setVoiceError(`Voice error: ${e.error}. Try again.`);
-      }
-      clearSubtitleAfterDelay(1500);
-    };
-
-    rec.onend = () => {
-      setIsListening(false);
-      // Keep subtitle visible for 2s so user can confirm what was heard
-      clearSubtitleAfterDelay(2000);
-    };
-
-    recognitionRef.current = rec;
-    try {
-      rec.start();
-    } catch (e) {
-      setVoiceError("Could not start microphone. Is another app using it?");
-      setIsListening(false);
-    }
-  }, [voiceLang, clearSubtitleAfterDelay]);
+    }, [voiceLang, clearSubtitleAfterDelay]);
 
   const toggleVoice = () => {
     if (isListening) stopVoice();

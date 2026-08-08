@@ -274,9 +274,9 @@ const ShellContent: React.FC = () => {
       { icon: MapIcon,         label: t('regionalAnalytics'), path: '/regions' },
       { icon: History,         label: t('statistics'),        path: '/stats' },
       { icon: Cpu,             label: t('deviceConsole'),     path: '/console' },
-      { icon: SettingsIcon,    label: t('settings'),          path: '/settings' },
       { icon: User,            label: t('patientIntake'),     path: '/register' },
       { icon: MapPin,          label: t('teleconsultation'),  path: '/teleconsultation' },
+      { icon: SettingsIcon,    label: t('settings'),          path: '/settings' },
     ],
     [t]
   );
