@@ -1,5 +1,136 @@
-
 AI Health Prediction System
+
+## 💻 Hardware AI — On-Device Biomarker Estimation
+
+The hardware component of **Anibilin** is powered by an **ESP32-S3** and is designed to estimate important health biomarkers directly on the device.
+
+Instead of sending raw sensor data to a cloud server, the system processes the optical signals locally and performs lightweight machine-learning calculations on the ESP32-S3.
+
+### 🩺 Biomarkers Estimated
+
+The hardware currently focuses on:
+
+* 🫁 **SpO₂**
+* ❤️ **Heart Rate**
+* 🩸 **Hemoglobin (Hb)**
+* 🟡 **Bilirubin**
+
+---
+
+## ⚙️ How It Works
+
+The device uses a **multispectral optical sensing system** to collect information from different wavelengths of light.
+
+The general pipeline is:
+
+```text
+Optical Sensor
+      ↓
+Raw Signal Acquisition
+      ↓
+Signal Processing
+      ↓
+Feature Extraction
+      ↓
+On-Device ML Models
+      ↓
+Biomarker Estimation
+```
+
+The important part is that the ML inference happens **directly on the ESP32-S3**, allowing the device to operate without depending on cloud-based computation.
+
+---
+
+## 🧠 On-Device Machine Learning
+
+Different biomarkers require different levels of mathematical processing.
+
+### 1. Simple Calibration Models
+
+For measurements such as **SpO₂ and Heart Rate**, the system uses lightweight calibration models based on key characteristics extracted from the optical signal.
+
+These models are computationally inexpensive and suitable for real-time execution on the ESP32-S3.
+
+### 2. Multispectral Regression Models
+
+For more complex biomarkers such as **Hemoglobin and Bilirubin**, the system uses multiple optical features obtained from different wavelengths.
+
+A regression-based ML approach combines these features to estimate the corresponding biomarker value.
+
+This helps the system account for variations caused by factors such as:
+
+* Skin pigmentation
+* Tissue properties
+* Optical scattering
+* Sensor conditions
+* Individual physiological differences
+
+The exact feature engineering, wavelength combinations, calibration parameters, and trained coefficients are part of our **proprietary implementation** and are not disclosed in this repository.
+
+---
+
+## 🚀 Edge AI Architecture
+
+```text
+              Multispectral Sensor
+                       │
+                       ▼
+               ESP32-S3 Processor
+                       │
+              ┌────────┴────────┐
+              │                 │
+       Signal Processing   Feature Extraction
+              │                 │
+              └────────┬────────┘
+                       ▼
+                 ML Inference
+                       │
+          ┌────────────┼────────────┐
+          ▼            ▼            ▼
+        SpO₂       Hemoglobin    Bilirubin
+          │            │            │
+          └────────────┴────────────┘
+                       │
+                       ▼
+               Local Health Data
+```
+
+---
+
+## ⭐ Why On-Device AI?
+
+Running the ML models directly on the ESP32-S3 provides several advantages:
+
+* ⚡ Real-time processing
+* 🔒 Reduced dependency on cloud services
+* 📡 Can operate with limited connectivity
+* 💾 Low computational and memory requirements
+* 🔋 Suitable for portable devices
+* 🧠 Edge-based AI inference
+
+---
+
+## 🔬 Our Approach
+
+The key idea behind Anibilin is to combine:
+
+**Multispectral sensing + Signal Processing + Edge AI**
+
+to create a compact system capable of estimating multiple biomarkers from optical measurements.
+
+Rather than relying on a single sensor reading, the system analyzes information across multiple optical channels and uses trained models to obtain more meaningful estimations.
+
+> 🔐 **Implementation Note:** The detailed optical feature engineering, sensor configuration, calibration methodology, regression coefficients, and model parameters are intentionally not published to protect the project's intellectual property.
+
+---
+
+## ⚠️ Research Disclaimer
+
+Anibilin is currently a **research and engineering prototype**. The estimated biomarker values are not intended to replace laboratory blood tests, professional medical evaluation, or clinically validated diagnostic equipment.
+##
+##
+##
+
 ## 💻 Software 
 The software component of the project uses a **machine-learning based health risk prediction system** to estimate the risk of four major health conditions:
 
