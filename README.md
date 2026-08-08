@@ -1,5 +1,16 @@
 AI Health Prediction System
 
+## 🩺 Why We Are Building Anibilin
+
+**Anibilin is a non-invasive blood scanner designed to bring basic health screening closer to the people who need it most.**
+
+In rural and semi-urban India, timely diagnostic testing is often limited by distance, cost, overloaded Primary Health Centres, and lack of accessible digital tools. As a result, conditions such as **anaemia, diabetes, hypertension, and cardiovascular problems** may remain undetected until symptoms become serious.
+
+We are building Anibilin to enable **fast, accessible, and non-invasive preliminary screening**, helping frontline healthcare workers identify potential health risks earlier and make better-informed decisions.
+
+> **Our vision: Detect earlier. Reach farther. Save more lives.**
+
+
 ## 💻 Hardware AI — On-Device Biomarker Estimation
 
 The hardware component of **Anibilin** is powered by an **ESP32-S3** and is designed to estimate important health biomarkers directly on the device.
